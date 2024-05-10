@@ -4,3 +4,6 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+libp2p = { version = "0.53.2" }
+time = { version = "0.3.36", features = ["serde"] }
+serde = { version = "1.0.201", features = ["derive"] }
