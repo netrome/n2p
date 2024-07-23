@@ -76,7 +76,7 @@ impl Controller {
         }
     }
 
-    pub async fn send_note(&mut self, note: note::Signed<note::Note>) {
+    pub fn send_note(&mut self, note: note::Signed<note::Note>) {
         let topic = libp2p::gossipsub::IdentTopic::new("n2p-test");
         let encoded_note = note.encode_to_vec().expect("failed to encode to vec");
         self.swarm
@@ -136,7 +136,9 @@ impl Controller {
                     .add_note(note);
             }
 
-            _ => {}
+            other => {
+                println!("Other event: {other:?}");
+            }
         }
     }
 
@@ -155,3 +157,75 @@ use std::hash::Hasher as _;
 
 use crate::model;
 use crate::note;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use libp2p::identity;
+    use fake::Fake as _;
+    use note::Sign as _;
+    use rand::RngCore as _;
+    use rand::SeedableRng as _;
+
+    #[tokio::test]
+    async fn controllers_should_be_able_to_communicate() {
+        let mut c1 = Controller::new();
+
+        let mut rng = rand::rngs::StdRng::seed_from_u64(42);
+        let mut secret_key_bytes = [0; 32];
+        rng.fill_bytes(&mut secret_key_bytes);
+        let keypair = identity::Keypair::ed25519_from_bytes(secret_key_bytes)
+            .expect("Failed to generate keypair");
+
+        let note: note::Note = fake::Faker.fake_with_rng(&mut rng);
+        let signed = note.sign(&keypair).expect("Failed to sign note");
+        let s1 = signed.clone();
+
+        for i in 0..10 {
+            println!("{i}");
+            c1.poll().await;
+        }
+        println!(".... C2");
+
+        let mut c2 = Controller::new();
+
+        for i in 0..10 {
+            println!("{i}");
+            c2.poll().await;
+        }
+
+        println!(".... Both");
+
+        let h1 = tokio::spawn(async move {
+            for i in 0..149 {
+                println!("c1: {i}");
+                c1.poll().await;
+            }
+            println!("Sent note");
+            c1.send_note(s1);
+
+            c1.poll().await;
+
+            c1.model
+        });
+
+        let h2 = tokio::spawn(async move {
+            for i in 0..200 {
+                println!("c2: {i}");
+                c2.poll().await;
+                if !c2.model.topics.is_empty() {
+                    break;
+                }
+            }
+
+            c2.model
+        });
+
+        let m1 = h1.await.expect("oh noooo");
+        let m2 = h2.await.expect("oh noooo");
+
+        assert_eq!(m1, m2);
+        println!("Model: {:?}", m1);
+    }
+}

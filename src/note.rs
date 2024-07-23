@@ -57,7 +57,7 @@ pub enum SignError<DigestError> {
     Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, serde::Serialize, serde::Deserialize,
 )]
 #[serde(into = "Vec<u8>")]
-#[serde(try_from = "&[u8]")]
+#[serde(try_from = "Vec<u8>")]
 pub struct PubKey(identity::PublicKey);
 
 impl From<PubKey> for Vec<u8> {
@@ -66,10 +66,10 @@ impl From<PubKey> for Vec<u8> {
     }
 }
 
-impl TryFrom<&[u8]> for PubKey {
+impl TryFrom<Vec<u8>> for PubKey {
     type Error = identity::DecodingError;
-    fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        Ok(PubKey(identity::PublicKey::try_decode_protobuf(value)?))
+    fn try_from(value: Vec<u8>) -> Result<Self, Self::Error> {
+        Ok(PubKey(identity::PublicKey::try_decode_protobuf(&value)?))
     }
 }
 
@@ -149,5 +149,26 @@ mod tests {
         signed.inner.msg.push_str("TAMPERED");
 
         assert!(!signed.verify());
+    }
+
+    #[test]
+    fn notes_can_be_encoded_and_decoded() {
+        let mut rng = rand::rngs::StdRng::seed_from_u64(42);
+        let mut secret_key_bytes = [0; 32];
+        rng.fill_bytes(&mut secret_key_bytes);
+        let keypair = identity::Keypair::ed25519_from_bytes(secret_key_bytes)
+            .expect("failed to generate keypair");
+
+        let note: Note = fake::Faker.fake_with_rng(&mut rng);
+
+        let signed = note.sign(&keypair).expect("failed to sign note");
+
+        let encoded = signed
+            .encode_to_vec()
+            .expect("failed to encode signed note");
+        let decoded =
+            Signed::<Note>::decode(encoded.as_slice()).expect("failed to decoded encoded note");
+
+        assert_eq!(decoded, signed);
     }
 }
