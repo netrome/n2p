@@ -162,8 +162,8 @@ use crate::note;
 mod tests {
     use super::*;
 
-    use libp2p::identity;
     use fake::Fake as _;
+    use libp2p::identity;
     use note::Sign as _;
     use rand::RngCore as _;
     use rand::SeedableRng as _;
