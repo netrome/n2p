@@ -4,10 +4,23 @@ pub struct App {
 }
 
 impl App {
-    pub fn run(&mut self, terminal: &mut tui::Tui) -> std::io::Result<()> {
+    pub async fn run(&mut self, terminal: &mut tui::Tui) -> std::io::Result<()> {
+        let mut event_stream = crossterm::event::EventStream::new();
         loop {
             terminal.draw(|frame| self.render_frame(frame))?;
-            self.handle_events()?;
+            tokio::select! {
+                _ = self.controller.poll() => {
+                    todo!();
+                }
+
+                event = event_stream.next() => {
+                    if let Some(Ok(event)) = event {
+                    self.handle_event(event);
+                    } else {
+                        panic!("oh nooo, what happened with the event stream?")
+                    }
+                }
+            };
         }
     }
 
@@ -15,7 +28,7 @@ impl App {
         frame.render_widget(self, frame.size());
     }
 
-    fn handle_events(&mut self) -> std::io::Result<()> {
+    fn handle_event(&mut self, event: crossterm::event::Event) {
         todo!()
     }
 }
@@ -36,6 +49,7 @@ impl ratatui::widgets::Widget for &App {
     }
 }
 
+use futures::StreamExt as _;
 use ratatui::style::Stylize as _;
 use ratatui::widgets::Widget as _;
 
