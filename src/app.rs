@@ -1,6 +1,7 @@
 pub struct App {
     controller: controller::Controller,
     typing: Option<String>,
+    key_pair: identity::Keypair,
 }
 
 impl App {
@@ -29,7 +30,62 @@ impl App {
     }
 
     fn handle_event(&mut self, event: crossterm::event::Event) {
-        todo!()
+        match event {
+            crossterm::event::Event::Key(key_event) => self.handle_key_event(key_event),
+            other => {
+                println!("received other event: {other:?}");
+            }
+        }
+    }
+
+    fn handle_key_event(&mut self, key_event: crossterm::event::KeyEvent) {
+        match (key_event.modifiers, key_event.code) {
+            (crossterm::event::KeyModifiers::CONTROL, crossterm::event::KeyCode::Char('q')) => {
+                panic!("Goodbye!")
+            }
+            (_, crossterm::event::KeyCode::Enter) => {
+                self.on_enter();
+            }
+            (_, crossterm::event::KeyCode::Char(c)) => {
+                self.type_char(c);
+            }
+            _ => {
+                todo!()
+            }
+        }
+    }
+
+    fn on_enter(&mut self) {
+        match &self.typing {
+            Some(msg) => {
+                self.send_message(msg.to_owned());
+                self.typing = None;
+            }
+            None => {
+                self.typing = Some(String::new());
+            }
+        }
+    }
+
+    fn type_char(&mut self, c: char) {
+        let Some(msg) = self.typing.as_mut() else {
+            return;
+        };
+
+        msg.push(c);
+    }
+
+    fn send_message(&mut self, msg: String) {
+        let now = time::OffsetDateTime::now_utc();
+        let created_at = time::PrimitiveDateTime::new(now.date(), now.time());
+        let note = note::Note {
+            topic: "Derp".to_owned(),
+            msg,
+            created_at,
+        };
+
+        let signed = note.sign(&self.key_pair).expect("failed to sign note");
+        self.controller.send_note(signed);
     }
 }
 
@@ -59,5 +115,9 @@ use ratatui::widgets::block::title::Title;
 use ratatui::widgets::Block;
 use ratatui::widgets::List;
 
+use libp2p::identity;
+
 use crate::controller;
+use crate::note;
+use crate::note::Sign;
 use crate::tui;
