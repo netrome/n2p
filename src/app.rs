@@ -2,6 +2,7 @@ pub struct App {
     controller: controller::Controller,
     typing: Option<String>,
     key_pair: identity::Keypair,
+    exit: bool,
 }
 
 impl App {
@@ -10,11 +11,12 @@ impl App {
             controller: controller::Controller::new(),
             typing: None,
             key_pair: identity::Keypair::generate_ed25519(),
+            exit: false,
         }
     }
-    pub async fn run(&mut self, terminal: &mut tui::Tui) -> std::io::Result<()> {
+    pub async fn run(&mut self, terminal: &mut tui::Tui) -> anyhow::Result<()> {
         let mut event_stream = crossterm::event::EventStream::new();
-        loop {
+        while !self.exit {
             terminal.draw(|frame| self.render_frame(frame))?;
             tokio::select! {
                 _ = self.controller.poll() => {}
@@ -28,6 +30,8 @@ impl App {
                 }
             };
         }
+
+        Ok(())
     }
 
     fn render_frame(&self, frame: &mut ratatui::Frame) {
@@ -46,7 +50,7 @@ impl App {
     fn handle_key_event(&mut self, key_event: crossterm::event::KeyEvent) {
         match (key_event.modifiers, key_event.code) {
             (crossterm::event::KeyModifiers::CONTROL, crossterm::event::KeyCode::Char('q')) => {
-                panic!("Goodbye!")
+                self.exit = true;
             }
             (_, crossterm::event::KeyCode::Enter) => {
                 self.on_enter();
