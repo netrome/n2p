@@ -1,6 +1,6 @@
 pub struct App {
     controller: controller::Controller,
-    typing: Option<String>,
+    message_input: Option<tui_textarea::TextArea<'static>>,
     key_pair: identity::Keypair,
     exit: bool,
 }
@@ -9,7 +9,7 @@ impl App {
     pub fn new() -> anyhow::Result<Self> {
         Ok(Self {
             controller: controller::Controller::new()?,
-            typing: None,
+            message_input: None,
             key_pair: identity::Keypair::generate_ed25519(),
             exit: false,
         })
@@ -53,36 +53,34 @@ impl App {
             (crossterm::event::KeyModifiers::CONTROL, crossterm::event::KeyCode::Char('q')) => {
                 self.exit = true;
             }
-            (_, crossterm::event::KeyCode::Enter) => {
-                self.on_enter();
+            (crossterm::event::KeyModifiers::CONTROL, crossterm::event::KeyCode::Char('s')) => {
+                self.toggle_typing();
             }
-            (_, crossterm::event::KeyCode::Char(c)) => {
-                self.type_char(c);
-            }
-            _ => {
-                todo!()
+            event => {
+                self.edit_message(key_event);
             }
         }
     }
 
-    fn on_enter(&mut self) {
-        match &self.typing {
-            Some(msg) => {
+    fn toggle_typing(&mut self) {
+        match self.message_input.as_mut() {
+            Some(text_area) => {
+                text_area.select_all();
+                text_area.cut();
+                let msg = text_area.yank_text();
                 self.send_message(msg.to_owned());
-                self.typing = None;
+                self.message_input = None;
             }
             None => {
-                self.typing = Some(String::new());
+                self.message_input = Some(tui_textarea::TextArea::default());
             }
         }
     }
 
-    fn type_char(&mut self, c: char) {
-        let Some(msg) = self.typing.as_mut() else {
-            return;
-        };
-
-        msg.push(c);
+    fn edit_message(&mut self, event: crossterm::event::KeyEvent) {
+        if let Some(text_area) = self.message_input.as_mut() {
+            text_area.input(event);
+        }
     }
 
     fn send_message(&mut self, msg: String) {
@@ -127,11 +125,11 @@ impl ratatui::widgets::Widget for &App {
             .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(area);
 
-        let text = Paragraph::new(self.typing.clone().unwrap_or_default())
-            .block(Block::bordered().border_set(border::ROUNDED));
-
         list.render(*layout.get(0).expect("impossibru"), buf);
-        text.render(*layout.get(1).expect("impossibru"), buf);
+
+        if let Some(text_area) = &self.message_input {
+            text_area.widget().render(*layout.get(1).expect("impossibru"), buf);
+        }
     }
 }
 
