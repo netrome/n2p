@@ -17,9 +17,7 @@ impl App {
         loop {
             terminal.draw(|frame| self.render_frame(frame))?;
             tokio::select! {
-                _ = self.controller.poll() => {
-                    todo!();
-                }
+                _ = self.controller.poll() => {}
 
                 event = event_stream.next() => {
                     if let Some(Ok(event)) = event {
