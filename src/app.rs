@@ -5,6 +5,13 @@ pub struct App {
 }
 
 impl App {
+    pub fn new() -> Self {
+        Self {
+            controller: controller::Controller::new(),
+            typing: None,
+            key_pair: identity::Keypair::generate_ed25519(),
+        }
+    }
     pub async fn run(&mut self, terminal: &mut tui::Tui) -> std::io::Result<()> {
         let mut event_stream = crossterm::event::EventStream::new();
         loop {
