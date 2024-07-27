@@ -136,9 +136,7 @@ impl ratatui::widgets::Widget for &App {
 }
 
 use futures::StreamExt as _;
-use ratatui::layout;
 use ratatui::style::Stylize as _;
-use ratatui::widgets::Widget as _;
 
 use ratatui::layout::Alignment;
 use ratatui::layout::Constraint;
