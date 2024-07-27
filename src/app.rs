@@ -38,7 +38,7 @@ impl App {
         match event {
             crossterm::event::Event::Key(key_event) => self.handle_key_event(key_event),
             other => {
-                println!("received other event: {other:?}");
+                //println!("received other event: {other:?}");
             }
         }
     }
@@ -103,7 +103,17 @@ impl ratatui::widgets::Widget for &App {
         let block = Block::bordered()
             .title(title.alignment(Alignment::Center))
             .border_set(border::THICK);
-        let items = ["Hello I am derp", "I am derpface", "I am groot"];
+        let items: Vec<_> = self
+            .controller
+            .model()
+            .topics
+            .get("Derp")
+            .cloned()
+            .unwrap_or_default()
+            .notes
+            .values()
+            .map(|note| note.inner.msg.clone()).collect();
+        //let items = ["Hello I am derp", "I am derpface", "I am groot"];
         let list = List::new(items).block(block);
 
         list.render(area, buf)

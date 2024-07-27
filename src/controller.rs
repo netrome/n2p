@@ -99,7 +99,7 @@ impl Controller {
                 libp2p::mdns::Event::Discovered(peers),
             )) => {
                 for (peer_id, _multiaddr) in peers {
-                    println!("mDNS discovered a new peer: {peer_id}");
+                    //println!("mDNS discovered a new peer: {peer_id}");
                     self.swarm
                         .behaviour_mut()
                         .gossipsub
@@ -111,7 +111,7 @@ impl Controller {
                 libp2p::mdns::Event::Expired(peers),
             )) => {
                 for (peer_id, _multiaddr) in peers {
-                    println!("mDNS discovered peer has expired: {peer_id}");
+                    //println!("mDNS discovered peer has expired: {peer_id}");
                     self.swarm
                         .behaviour_mut()
                         .gossipsub
@@ -126,7 +126,7 @@ impl Controller {
                     message,
                 },
             )) => {
-                println!("Got message {message_id} from {propagation_source}");
+                //println!("Got message {message_id} from {propagation_source}");
                 let note = note::Signed::<note::Note>::decode(message.data.as_slice())
                     .expect("decode failed");
                 self.model
@@ -137,7 +137,7 @@ impl Controller {
             }
 
             other => {
-                println!("Other event: {other:?}");
+                //println!("Other event: {other:?}");
             }
         }
     }
@@ -183,7 +183,7 @@ mod tests {
         let s1 = signed.clone();
 
         for i in 0..10 {
-            println!("{i}");
+            //println!("{i}");
             c1.poll().await;
         }
         println!(".... C2");
