@@ -2,7 +2,7 @@
 async fn main() -> anyhow::Result<()> {
     let mut terminal = n2p::tui::init_terminal()?;
 
-    let mut app = n2p::app::App::new();
+    let mut app = n2p::app::App::new()?;
 
     app.run(&mut terminal).await?;
 

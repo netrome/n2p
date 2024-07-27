@@ -6,14 +6,15 @@ pub struct App {
 }
 
 impl App {
-    pub fn new() -> Self {
-        Self {
-            controller: controller::Controller::new(),
+    pub fn new() -> anyhow::Result<Self> {
+        Ok(Self {
+            controller: controller::Controller::new()?,
             typing: None,
             key_pair: identity::Keypair::generate_ed25519(),
             exit: false,
-        }
+        })
     }
+
     pub async fn run(&mut self, terminal: &mut tui::Tui) -> anyhow::Result<()> {
         let mut event_stream = crossterm::event::EventStream::new();
         while !self.exit {

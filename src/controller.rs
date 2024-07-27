@@ -10,7 +10,7 @@ struct Behavior {
 }
 
 impl Controller {
-    pub fn new() -> Self {
+    pub fn new() -> anyhow::Result<Self> {
         let mut swarm = libp2p::SwarmBuilder::with_new_identity()
             .with_tokio()
             .with_tcp(
@@ -18,7 +18,7 @@ impl Controller {
                 libp2p::noise::Config::new,
                 libp2p::yamux::Config::default,
             )
-            .expect("failed to configure tcp for swarm")
+            .context("failed to configure tcp for swarm")?
             .with_quic()
             .with_behaviour(|key| {
                 // To content-address message, we can take the hash of message and use it as an ID.
@@ -48,7 +48,7 @@ impl Controller {
                 )?;
                 Ok(Behavior { gossipsub, mdns })
             })
-            .expect("failed to configure behavior for swarm")
+            .context("failed to configure behavior for swarm")?
             .with_swarm_config(|c| {
                 c.with_idle_connection_timeout(std::time::Duration::from_secs(60))
             })
@@ -61,19 +61,19 @@ impl Controller {
             .behaviour_mut()
             .gossipsub
             .subscribe(&topic)
-            .expect("failed to subscribe to gossipsub topic");
+            .context("failed to subscribe to gossipsub topic")?;
 
         swarm
             .listen_on("/ip4/0.0.0.0/udp/0/quic-v1".parse().unwrap())
-            .expect("failed to listen with quic");
+            .context("failed to listen with quic")?;
         swarm
             .listen_on("/ip4/0.0.0.0/tcp/0".parse().unwrap())
-            .expect("failed to listen with tcp");
+            .context("failed to listen with tcp")?;
 
-        Self {
+        Ok(Self {
             model: model::Model::new(),
             swarm,
-        }
+        })
     }
 
     pub fn send_note(&mut self, note: note::Signed<note::Note>) {
@@ -150,6 +150,7 @@ impl Controller {
 use crate::note::Decode as _;
 use crate::note::Encode as _;
 
+use anyhow::Context;
 use libp2p::futures::StreamExt as _;
 
 use std::hash::Hash as _;
