@@ -116,23 +116,39 @@ impl ratatui::widgets::Widget for &App {
             .unwrap_or_default()
             .notes
             .values()
-            .map(|note| note.inner.msg.clone()).collect();
-        //let items = ["Hello I am derp", "I am derpface", "I am groot"];
+            .map(|note| note.inner.msg.clone())
+            .collect();
+
         let list = List::new(items).block(block);
 
-        list.render(area, buf)
+        let layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+            .split(area);
+
+        let text = Paragraph::new(self.typing.clone().unwrap_or_default())
+            .block(Block::bordered().border_set(border::ROUNDED));
+
+        list.render(*layout.get(0).expect("impossibru"), buf);
+        text.render(*layout.get(1).expect("impossibru"), buf);
     }
 }
 
 use futures::StreamExt as _;
+use ratatui::layout;
 use ratatui::style::Stylize as _;
 use ratatui::widgets::Widget as _;
 
 use ratatui::layout::Alignment;
+use ratatui::layout::Constraint;
+use ratatui::layout::Direction;
+use ratatui::layout::Layout;
+
 use ratatui::symbols::border;
 use ratatui::widgets::block::title::Title;
 use ratatui::widgets::Block;
 use ratatui::widgets::List;
+use ratatui::widgets::Paragraph;
 
 use libp2p::identity;
 
