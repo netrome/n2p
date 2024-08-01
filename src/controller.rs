@@ -120,11 +120,7 @@ impl Controller {
             }
 
             libp2p::swarm::SwarmEvent::Behaviour(BehaviorEvent::Gossipsub(
-                libp2p::gossipsub::Event::Message {
-                    propagation_source,
-                    message_id,
-                    message,
-                },
+                libp2p::gossipsub::Event::Message { message, .. },
             )) => {
                 //println!("Got message {message_id} from {propagation_source}");
                 let note = note::Signed::<note::Note>::decode(message.data.as_slice())
@@ -136,9 +132,7 @@ impl Controller {
                     .add_note(note);
             }
 
-            other => {
-                //println!("Other event: {other:?}");
-            }
+            _other => {}
         }
     }
 

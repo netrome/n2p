@@ -42,9 +42,7 @@ impl App {
     fn handle_event(&mut self, event: crossterm::event::Event) {
         match event {
             crossterm::event::Event::Key(key_event) => self.handle_key_event(key_event),
-            other => {
-                //println!("received other event: {other:?}");
-            }
+            _other => {}
         }
     }
 
@@ -56,7 +54,7 @@ impl App {
             (crossterm::event::KeyModifiers::CONTROL, crossterm::event::KeyCode::Char('s')) => {
                 self.toggle_typing();
             }
-            event => {
+            _event => {
                 self.edit_message(key_event);
             }
         }
@@ -128,7 +126,9 @@ impl ratatui::widgets::Widget for &App {
         list.render(*layout.get(0).expect("impossibru"), buf);
 
         if let Some(text_area) = &self.message_input {
-            text_area.widget().render(*layout.get(1).expect("impossibru"), buf);
+            text_area
+                .widget()
+                .render(*layout.get(1).expect("impossibru"), buf);
         }
     }
 }
@@ -145,7 +145,6 @@ use ratatui::symbols::border;
 use ratatui::widgets::block::title::Title;
 use ratatui::widgets::Block;
 use ratatui::widgets::List;
-use ratatui::widgets::Paragraph;
 
 use libp2p::identity;
 
