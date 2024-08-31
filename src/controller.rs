@@ -165,7 +165,7 @@ mod tests {
 
     #[tokio::test]
     async fn controllers_should_be_able_to_communicate() {
-        let mut c1 = Controller::new();
+        let mut c1 = Controller::new().unwrap();
 
         let mut rng = rand::rngs::StdRng::seed_from_u64(42);
         let mut secret_key_bytes = [0; 32];
@@ -177,27 +177,20 @@ mod tests {
         let signed = note.sign(&keypair).expect("Failed to sign note");
         let s1 = signed.clone();
 
-        for i in 0..10 {
-            //println!("{i}");
+        for _ in 0..10 {
             c1.poll().await;
         }
-        println!(".... C2");
 
-        let mut c2 = Controller::new();
+        let mut c2 = Controller::new().unwrap();
 
-        for i in 0..10 {
-            println!("{i}");
+        for _ in 0..10 {
             c2.poll().await;
         }
 
-        println!(".... Both");
-
         let h1 = tokio::spawn(async move {
-            for i in 0..149 {
-                println!("c1: {i}");
+            for _ in 0..149 {
                 c1.poll().await;
             }
-            println!("Sent note");
             c1.send_note(s1);
 
             c1.poll().await;
@@ -206,8 +199,7 @@ mod tests {
         });
 
         let h2 = tokio::spawn(async move {
-            for i in 0..200 {
-                println!("c2: {i}");
+            for _ in 0..200 {
                 c2.poll().await;
                 if !c2.model.topics.is_empty() {
                     break;
@@ -221,6 +213,5 @@ mod tests {
         let m2 = h2.await.expect("oh noooo");
 
         assert_eq!(m1, m2);
-        println!("Model: {:?}", m1);
     }
 }
