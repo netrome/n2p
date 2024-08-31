@@ -10,6 +10,10 @@ impl ChatView {
             list_state: Default::default(),
         }
     }
+
+    pub fn view(&mut self, topic: String) {
+        self.topic = topic
+    }
 }
 
 impl components::Component for ChatView {
@@ -37,8 +41,7 @@ impl components::Component for ChatView {
 
         let list = ratatui::widgets::List::new(items)
             .block(block)
-            .style(ratatui::style::Style::default())
-            .fg(ratatui::style::Color::White)
+            .style(ratatui::style::Style::default().fg(ratatui::style::Color::White))
             .highlight_style(
                 ratatui::style::Style::default().add_modifier(ratatui::style::Modifier::ITALIC),
             );
@@ -48,7 +51,5 @@ impl components::Component for ChatView {
         ratatui::widgets::StatefulWidget::render(list, area, buf, &mut self.list_state);
     }
 }
-
-use ratatui::style::Stylize as _;
 
 use crate::components;

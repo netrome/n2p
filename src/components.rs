@@ -10,6 +10,8 @@ pub trait Component {
 
 pub enum Effect {
     SendMessage(String),
+    ViewTopic(String),
+    Return,
     Nothing,
 }
 

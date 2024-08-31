@@ -1,6 +1,6 @@
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Model {
-    pub topics: HashMap<String, Topic>,
+    pub topics: BTreeMap<String, Topic>,
 }
 
 impl Model {
@@ -25,6 +25,5 @@ impl Topic {
 }
 
 use std::collections::BTreeMap;
-use std::collections::HashMap;
 
 use crate::note;

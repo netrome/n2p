@@ -1,6 +1,7 @@
 pub struct App {
     controller: controller::Controller,
     components: Components,
+    focus: Focus,
     key_pair: identity::Keypair,
     exit: bool,
 }
@@ -10,6 +11,7 @@ impl App {
         Ok(Self {
             controller: controller::Controller::new()?,
             components: Components::new(),
+            focus: Focus::MessageInput,
             key_pair: identity::Keypair::generate_ed25519(),
             exit: false,
         })
@@ -51,10 +53,18 @@ impl App {
             (crossterm::event::KeyModifiers::CONTROL, crossterm::event::KeyCode::Char('q')) => {
                 self.exit = true;
             }
+            (crossterm::event::KeyModifiers::CONTROL, crossterm::event::KeyCode::Char('t')) => {
+                self.focus = Focus::Topics;
+            }
+            (crossterm::event::KeyModifiers::CONTROL, crossterm::event::KeyCode::Char('y')) => {
+                self.focus = Focus::MessageInput;
+            }
             _event => {
-                let effect = self.components.message_input.update(key_event);
+                let effect = self.components.update(self.focus, key_event);
                 match effect {
                     components::Effect::SendMessage(msg) => self.send_message(msg),
+                    components::Effect::ViewTopic(topic) => self.components.chat_view.view(topic),
+                    components::Effect::Return => self.focus = Focus::MessageInput,
                     _ => (),
                 }
             }
@@ -65,7 +75,12 @@ impl App {
         let now = time::OffsetDateTime::now_utc();
         let created_at = time::PrimitiveDateTime::new(now.date(), now.time());
         let note = note::Note {
-            topic: "Derp".to_owned(),
+            topic: self
+                .components
+                .topics
+                .selected_topic()
+                .expect("No topic")
+                .to_string(),
             msg,
             created_at,
         };
@@ -81,25 +96,33 @@ impl ratatui::widgets::Widget for &mut App {
         Self: Sized,
     {
         let layout = Layout::default()
-            .direction(Direction::Vertical)
-            .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
+            .direction(Direction::Horizontal)
+            .constraints(vec![Constraint::Length(15), Constraint::Fill(1)])
             .split(area);
+
+        let inner_layout = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints(vec![Constraint::Fill(1), Constraint::Length(5)])
+            .split(*layout.get(1).expect("impossibru"));
+
+        self.components.topics.render(&self.controller.model(), *layout.first().expect("impossibru"), buf);
 
         self.components.chat_view.render(
             &self.controller.model(),
-            *layout.first().expect("impossibru"),
+            *inner_layout.first().expect("impossibru"),
             buf,
         );
 
         self.components.message_input.render(
             &self.controller.model(),
-            *layout.get(1).expect("impossibru"),
+            *inner_layout.get(1).expect("impossibru"),
             buf,
         );
     }
 }
 
 pub struct Components {
+    topics: components::topics::Topics,
     chat_view: components::chat_view::ChatView,
     message_input: components::message_input::MessageInput,
 }
@@ -108,12 +131,29 @@ impl Components {
     fn new() -> Self {
         let chat_view = components::chat_view::ChatView::new("Derp".to_string());
         let message_input = Default::default();
+        let topics = components::topics::Topics::new();
 
         Self {
             chat_view,
             message_input,
+            topics,
         }
     }
+
+    fn update(&mut self, focus: Focus, event: crossterm::event::KeyEvent) -> components::Effect {
+        match focus {
+            Focus::Topics => self.topics.update(event),
+            Focus::ChatView => self.chat_view.update(event),
+            Focus::MessageInput => self.message_input.update(event),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum Focus {
+    Topics,
+    ChatView,
+    MessageInput,
 }
 
 use crate::components::Component as _;
