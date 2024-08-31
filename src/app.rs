@@ -1,6 +1,7 @@
 pub struct App {
     controller: controller::Controller,
     message_input: Option<tui_textarea::TextArea<'static>>,
+    chat_view_state: ratatui::widgets::ListState,
     key_pair: identity::Keypair,
     exit: bool,
 }
@@ -11,6 +12,7 @@ impl App {
             controller: controller::Controller::new()?,
             message_input: None,
             key_pair: identity::Keypair::generate_ed25519(),
+            chat_view_state: Default::default(),
             exit: false,
         })
     }
@@ -35,7 +37,7 @@ impl App {
         Ok(())
     }
 
-    fn render_frame(&self, frame: &mut ratatui::Frame) {
+    fn render_frame(&mut self, frame: &mut ratatui::Frame) {
         frame.render_widget(self, frame.size());
     }
 
@@ -95,7 +97,7 @@ impl App {
     }
 }
 
-impl ratatui::widgets::Widget for &App {
+impl ratatui::widgets::Widget for &mut App {
     fn render(self, area: ratatui::prelude::Rect, buf: &mut ratatui::prelude::Buffer)
     where
         Self: Sized,
@@ -123,7 +125,9 @@ impl ratatui::widgets::Widget for &App {
             .constraints(vec![Constraint::Percentage(50), Constraint::Percentage(50)])
             .split(area);
 
-        list.render(*layout.get(0).expect("impossibru"), buf);
+        self.chat_view_state.select_last();
+
+        StatefulWidget::render(list, *layout.get(0).expect("impossibru"), buf, &mut self.chat_view_state);
 
         if let Some(text_area) = &self.message_input {
             text_area
@@ -135,6 +139,7 @@ impl ratatui::widgets::Widget for &App {
 
 use futures::StreamExt as _;
 use ratatui::style::Stylize as _;
+use ratatui::widgets::StatefulWidget;
 
 use ratatui::layout::Alignment;
 use ratatui::layout::Constraint;
